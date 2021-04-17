@@ -3,7 +3,7 @@
  * @Author: Kotori Y
  * @Date: 2021-04-17 14:18:32
  * @LastEditors: Kotori Y
- * @LastEditTime: 2021-04-17 15:44:57
+ * @LastEditTime: 2021-04-17 16:07:21
  * @FilePath: \targetPrediction-JS\target_prediction\ppb2.js
  * @AuthorMail: kotori@cbdd.me
  *
@@ -13,6 +13,8 @@
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 
+const createCsvWriter = require("csv-writer").createObjectCsvWriter;
+const readCSV = require("./readCSV");
 
 async function PredictByPPB2(smiles, method = "NN(ECfp4)", idx = 1) {
   console.log(`>>> waiting ${idx} ppb2-${method}...`);
@@ -46,21 +48,21 @@ async function PredictByPPB2(smiles, method = "NN(ECfp4)", idx = 1) {
 
     var $ = cheerio.load(html);
 
-    var reg = /(?<=CHEMBL\d+\=fld\=).*?(?=\s|')/g
-    var _simi = $(".showNNBtn")
-    console.log(typeof _simi.eq(0).attr('onclick'))
-    var simi = []
-    for (let i=0; i<=_simi.length-1; i++) {
-      simi.push(_simi.eq(i).attr('onclick').match(reg))
+    var reg = /(?<=CHEMBL\d+\=fld\=).*?(?=\s|')/g;
+    var _simi = $(".showNNBtn");
+    console.log(typeof _simi.eq(0).attr("onclick"));
+    var simi = [];
+    for (let i = 0; i <= _simi.length - 1; i++) {
+      simi.push(_simi.eq(i).attr("onclick").match(reg));
     }
-    
-    console.log(simi)
+
+    console.log(simi);
 
     var contents = $("#resultTable tr")
       .text()
       .trim()
       .split("\n\n")
-      .map(ele =>
+      .map((ele) =>
         ele
           .trim()
           .split("\n")
@@ -68,9 +70,9 @@ async function PredictByPPB2(smiles, method = "NN(ECfp4)", idx = 1) {
       );
 
     var cols = contents[0];
-    var lines = contents.slice(1)
-    
-    lines.forEach((line, i) => line.push(idx, simi[i].join("|")))
+    var lines = contents.slice(1);
+
+    lines.forEach((line, i) => line.push(idx, simi[i].join("|")));
 
     cols[cols.length - 1] = "Method";
     cols.push("idx", "simi");
@@ -86,16 +88,50 @@ async function PredictByPPB2(smiles, method = "NN(ECfp4)", idx = 1) {
   } catch {
     var temp = {};
   }
-  
+
   return {
     cols: cols,
     out: out,
   };
-  
 }
 
+async function main(inputFile, outputFile, method = "NN(ECfp4)") {
+  var rows = readCSV.readTXT(inputFile);
+  //   console.log(rows);
 
-if (true) {
+  for (let row of rows) {
+    row = row.split("\t");
+    let res = await PredictByPPB2(row[0], method, row[1]);
+    console.log(row[0]);
+    // let res = await getPpbRes(row[0], row[1])
+    let header = [];
+    for (var _col of res.cols) {
+      header.push({ id: _col, title: _col });
+    }
+    // console.log(header);
+    // console.log("====== writing ======");
+    let csvWriter = createCsvWriter({
+      path: outputFile,
+      header: header,
+      append: true,
+    });
+    csvWriter.writeRecords(res.out);
+  }
+}
+
+let inputFile = "./data/temp.txt";
+let outputFile = "./data/tempOut.csv";
+
+const methods = [
+  "NN(ECfp4)",
+  "NN(ECfp4) + NB(ECfp4)",
+  "NN(Xfp) + NB(ECfp4)",
+  "DNN(ECfp4)",
+];
+
+main(inputFile, outputFile, methods[0]);
+
+if (false) {
   (async () => {
     var smiles = "Oc1cc(CCl)ccc1Oc2ccc(Cl)cc2Cl";
 
@@ -103,4 +139,3 @@ if (true) {
     console.log(result);
   })();
 }
-
