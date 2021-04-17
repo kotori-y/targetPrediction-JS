@@ -3,7 +3,7 @@
  * @Author: Kotori Y
  * @Date: 2021-04-17 14:18:32
  * @LastEditors: Kotori Y
- * @LastEditTime: 2021-04-17 16:07:21
+ * @LastEditTime: 2021-04-17 16:22:51
  * @FilePath: \targetPrediction-JS\target_prediction\ppb2.js
  * @AuthorMail: kotori@cbdd.me
  *
@@ -50,13 +50,11 @@ async function PredictByPPB2(smiles, method = "NN(ECfp4)", idx = 1) {
 
     var reg = /(?<=CHEMBL\d+\=fld\=).*?(?=\s|')/g;
     var _simi = $(".showNNBtn");
-    console.log(typeof _simi.eq(0).attr("onclick"));
+    
     var simi = [];
     for (let i = 0; i <= _simi.length - 1; i++) {
       simi.push(_simi.eq(i).attr("onclick").match(reg));
     }
-
-    console.log(simi);
 
     var contents = $("#resultTable tr")
       .text()
@@ -103,7 +101,6 @@ async function main(inputFile, outputFile, method = "NN(ECfp4)") {
     row = row.split("\t");
     let res = await PredictByPPB2(row[0], method, row[1]);
     console.log(row[0]);
-    // let res = await getPpbRes(row[0], row[1])
     let header = [];
     for (var _col of res.cols) {
       header.push({ id: _col, title: _col });
